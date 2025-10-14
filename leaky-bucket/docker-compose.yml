@@ -19,9 +19,6 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - ./localstack/init-aws.d:/etc/localstack/init/ready.d
-    profiles:
-      - all
-      - tools
 
   app1:
     build: .
