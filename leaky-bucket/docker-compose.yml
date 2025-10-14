@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"  # Edge port for all services
+    environment:
+      - SERVICES=sqs
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - AWS_DEFAULT_REGION=us-east-1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:4566/_localstack/health | grep -q '\"sqs\".*\"available\"' "]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - ./localstack/init-aws.d:/etc/localstack/init/ready.d
+    profiles:
+      - all
+      - tools
+
+  app1:
+    build: .
+    image: leaky-bucket-app:latest
+    container_name: leaky-bucket-app-1
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - spring.cloud.aws.region.static=us-east-1
+      - spring.cloud.aws.credentials.access-key=test
+      - spring.cloud.aws.credentials.secret-key=test
+      - spring.cloud.aws.sqs.endpoint=http://localstack:4566
+      - app.sqs.queue-name=leaky-bucket
+      # Bucket config can be tuned via envs if desired
+      - app.bucket.capacity=1000
+      - app.bucket.period=PT1H
+    profiles:
+      - all
+
+  app2:
+    image: leaky-bucket-app:latest
+    container_name: leaky-bucket-app-2
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - spring.cloud.aws.region.static=us-east-1
+      - spring.cloud.aws.credentials.access-key=test
+      - spring.cloud.aws.credentials.secret-key=test
+      - spring.cloud.aws.sqs.endpoint=http://localstack:4566
+      - app.sqs.queue-name=leaky-bucket
+      - app.bucket.capacity=1000
+      - app.bucket.period=PT1H
+    profiles:
+      - all
