@@ -17,12 +17,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class LimitUpdaterService {
 
-    private static final Logger log = LoggerFactory.getLogger(LimitUpdaterService.class);
-
     public static final String CAPACITY_KEY = "app.bucket.capacity";
-
+    private static final Logger log = LoggerFactory.getLogger(LimitUpdaterService.class);
     private final Bucket rateLimitBucket;
-    private final BucketConfiguration initialConfiguration;
     private final RedissonClient redissonClient;
 
     @Value("${app.bucket.capacity:7200}")
@@ -31,21 +28,16 @@ public class LimitUpdaterService {
     @Value("${app.bucket.period:PT1H}")
     private String period;
 
-    // Cache the last known limit to avoid unnecessary Redis calls
-    private int lastKnownLimit;
+    private long lastKnownLimit;
 
-    public LimitUpdaterService(Bucket rateLimitBucket, BucketConfiguration initialConfiguration, RedissonClient redissonClient) {
+    public LimitUpdaterService(Bucket rateLimitBucket, BucketConfiguration initialConfiguration,
+        RedissonClient redissonClient) {
         this.rateLimitBucket = rateLimitBucket;
-        this.initialConfiguration = initialConfiguration;
         this.redissonClient = redissonClient;
 
-        // Initialize the last known limit from the current configuration
-        this.lastKnownLimit = (int) initialConfiguration.getBandwidths()[0].getCapacity();
+        this.lastKnownLimit = initialConfiguration.getBandwidths()[0].getCapacity();
     }
 
-    /**
-     * Runs periodically to check for feature flag updates (every 5 seconds by default).
-     */
     @Scheduled(fixedDelay = 5000)
     public void checkAndApplyNewLimit() {
         int newLimit = fetchLimitFromRedisOrDefault();
@@ -53,20 +45,15 @@ public class LimitUpdaterService {
         if (newLimit != lastKnownLimit) {
             log.info("Detected bucket limit change: {} -> {}", lastKnownLimit, newLimit);
 
-            // 1. Create the NEW Bucket Configuration
             BucketConfiguration newConfig = createNewConfiguration(newLimit);
 
             try {
-                // 2. Atomically REPLACE the configuration in Redis
-                rateLimitBucket.replaceConfiguration(newConfig, TokensInheritanceStrategy.AS_IS
-                    // Crucial: Keep the current token count
-                );
+                rateLimitBucket.replaceConfiguration(newConfig, TokensInheritanceStrategy.AS_IS);
 
                 this.lastKnownLimit = newLimit;
                 log.info("Bucket configuration successfully updated to: {} per hour.", newLimit);
 
             } catch (Exception e) {
-                // Handle potential distributed lock or Redis connection errors
                 log.error("Failed to replace Bucket4j configuration: {}", e.getMessage());
             }
         }
@@ -80,15 +67,11 @@ public class LimitUpdaterService {
                 return value;
             }
         } catch (Exception e) {
-            // Redis might be temporarily unavailable; fall back gracefully
             log.debug("Could not read {} from Redis: {}", CAPACITY_KEY, e.getMessage());
         }
         return defaultCapacity;
     }
 
-    /**
-     * Helper to create the new configuration structure (Capacity=1, Refill=newLimit/hr).
-     */
     private BucketConfiguration createNewConfiguration(int limitPerHour) {
         Duration duration = Duration.parse(period);
         Bandwidth bandwidth = BandwidthBuilder.builder().capacity(1L)

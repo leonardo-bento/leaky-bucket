@@ -9,23 +9,17 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class DistributedBucketProvider {
 
-    // Must match the key used across all Kubernetes pods
     private static final String BUCKET_KEY = "sqs-global-rate-limit-key";
 
     private final ProxyManager<String> distributedProxyManager;
     private final BucketConfiguration sharedBucketConfiguration;
 
-    // Inject the necessary beans
     public DistributedBucketProvider(ProxyManager<String> distributedProxyManager,
         BucketConfiguration sharedBucketConfiguration) {
         this.distributedProxyManager = distributedProxyManager;
         this.sharedBucketConfiguration = sharedBucketConfiguration;
     }
 
-    /**
-     * Creates the single, distributed Bucket instance as a Spring Bean.
-     * This bean is shared across the entire application and across all running pods (via Redis).
-     */
     @Bean
     public Bucket rateLimitBucket() {
         // The ProxyManager resolves the Bucket, using the provided configuration

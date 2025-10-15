@@ -20,11 +20,6 @@ public class ConfigController {
         this.redissonClient = redissonClient;
     }
 
-    /**
-     * Sets the peak Bucket limit (tokens per period) and stores it in Redis under the key
-     * "app.bucket.capacity". The LimitUpdaterService will pick this value and update the distributed
-     * bucket configuration accordingly.
-     */
     @PostMapping("/limit/{limit}")
     public ResponseEntity<String> updateBucketLimit(@PathVariable("limit") int limit) {
         if (limit <= 0) {

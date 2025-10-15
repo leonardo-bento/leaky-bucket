@@ -5,8 +5,6 @@ import io.github.bucket4j.BlockingBucket;
 import io.github.bucket4j.Bucket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,19 +19,14 @@ public class LeakyBucketSqsListener {
     }
 
     @SqsListener("${app.sqs.queue-name:leaky-bucket}")
-    public void onMessage(String payload,
-                          @Header(name = "MessageId", required = false) String messageId) throws InterruptedException {
+    public void onMessage(String payload) throws InterruptedException {
         BlockingBucket blockingBucket = bucket.asBlocking();
         try {
             blockingBucket.consume(1L);
-            if (messageId == null) {
-                log.info("Processing message: {}", payload);
-            } else {
-                log.info("Processing message id={} payload={}", messageId, payload);
-            }
+            log.info("Processing message: {}", payload);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            System.err.println("Consumer thread interrupted while waiting for rate limit token.");
+            log.error("Consumer thread interrupted while waiting for rate limit token.");
         }
     }
 }

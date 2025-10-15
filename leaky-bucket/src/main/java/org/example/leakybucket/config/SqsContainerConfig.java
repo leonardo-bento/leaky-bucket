@@ -1,7 +1,6 @@
 package org.example.leakybucket.config;
 
 import io.awspring.cloud.sqs.config.SqsMessageListenerContainerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
@@ -9,27 +8,22 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 @Configuration
 public class SqsContainerConfig {
 
-    private final SqsAsyncClient sqsAsyncClient;
+    private static final int MAX_MESSAGES_PER_POLL = 1;
+    private static final int MAX_CONCURRENT_MESSAGES = 1;
 
-    // Inject the property value using @Value
-    @Value("${app.sqs.max-messages-per-poll:1}") // Defaulting to 10 is common
-    private int maxMessagesPerPoll;
+    private final SqsAsyncClient sqsAsyncClient;
 
     public SqsContainerConfig(SqsAsyncClient sqsAsyncClient) {
         this.sqsAsyncClient = sqsAsyncClient;
     }
 
-    /**
-     * Creates a custom SqsMessageListenerContainerFactory to control polling.
-     * This bean replaces the default auto-configured factory.
-     */
     @Bean
     public SqsMessageListenerContainerFactory<Object> defaultSqsListenerContainerFactory() {
 
         return SqsMessageListenerContainerFactory.builder()
             .configure(options -> options
-                .maxMessagesPerPoll(maxMessagesPerPoll)
-                .maxConcurrentMessages(maxMessagesPerPoll)
+                .maxMessagesPerPoll(MAX_MESSAGES_PER_POLL)
+                .maxConcurrentMessages(MAX_CONCURRENT_MESSAGES)
             )
             .sqsAsyncClient(this.sqsAsyncClient)
             .build();
