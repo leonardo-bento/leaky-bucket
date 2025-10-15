@@ -28,7 +28,7 @@ public class DistributedBucketProvider {
      */
     @Bean
     public Bucket rateLimitBucket() {
-        // The ProxyManager resolves the Bucket, using the provided configuration 
+        // The ProxyManager resolves the Bucket, using the provided configuration
         // if the bucket key is not yet present in Redis.
         return distributedProxyManager.builder().build(
             BUCKET_KEY,

@@ -29,6 +29,17 @@ services:
       timeout: 3s
       retries: 30
 
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: redis-insight
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+    environment:
+      - RI_REDIS_HOST=redis
+      - RI_REDIS_PORT=6379
+
   app1:
     build: .
     image: leaky-bucket-app:latest
