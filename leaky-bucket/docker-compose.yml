@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   localstack:
     image: localstack/localstack:latest
@@ -12,13 +10,24 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - AWS_DEFAULT_REGION=us-east-1
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:4566/_localstack/health | grep -q '\"sqs\".*\"available\"' "]
+      test: ["CMD-SHELL", "curl -s http://localhost:4566/_localstack/health | grep -q '\"sqs\".*\"running\"' "]
       interval: 5s
       timeout: 5s
       retries: 30
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - ./localstack/init-aws.d:/etc/localstack/init/ready.d
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
 
   app1:
     build: .
@@ -27,15 +36,20 @@ services:
     depends_on:
       localstack:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=default
       - spring.cloud.aws.region.static=us-east-1
       - spring.cloud.aws.credentials.access-key=test
       - spring.cloud.aws.credentials.secret-key=test
       - spring.cloud.aws.sqs.endpoint=http://localstack:4566
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SQS_HOST=localstack
+      - SQS_PORT=4566
       - app.sqs.queue-name=leaky-bucket
-      # Bucket config can be tuned via envs if desired
-      - app.bucket.capacity=1000
+      - app.bucket.capacity=7200
       - app.bucket.period=PT1H
     profiles:
       - all
@@ -46,14 +60,20 @@ services:
     depends_on:
       localstack:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=default
       - spring.cloud.aws.region.static=us-east-1
       - spring.cloud.aws.credentials.access-key=test
       - spring.cloud.aws.credentials.secret-key=test
       - spring.cloud.aws.sqs.endpoint=http://localstack:4566
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SQS_HOST=localstack
+      - SQS_PORT=4566
       - app.sqs.queue-name=leaky-bucket
-      - app.bucket.capacity=1000
+      - app.bucket.capacity=7200
       - app.bucket.period=PT1H
     profiles:
       - all

@@ -20,8 +20,16 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.15.0'
+    implementation 'com.bucket4j:bucket4j_jdk17-jcache:8.15.0'
+
+    implementation 'org.redisson:redisson-spring-boot-starter:3.52.0'
+
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs:3.3.0'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

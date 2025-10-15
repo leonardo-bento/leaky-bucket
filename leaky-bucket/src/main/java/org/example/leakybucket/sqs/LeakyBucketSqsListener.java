@@ -16,9 +16,6 @@ public class LeakyBucketSqsListener {
 
     private final Bucket bucket;
 
-    @Value("${app.sqs.queue-name:leaky-bucket}")
-    private String queueName;
-
     public LeakyBucketSqsListener(Bucket bucket) {
         this.bucket = bucket;
     }
@@ -26,21 +23,6 @@ public class LeakyBucketSqsListener {
     @SqsListener("${app.sqs.queue-name:leaky-bucket}")
     public void onMessage(String payload,
                           @Header(name = "MessageId", required = false) String messageId) throws InterruptedException {
-        // Block until a token is available to ensure we do not process more than the configured rate
-//        while (true) {
-//            ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
-//            if (probe.isConsumed()) {
-//                break;
-//            }
-//            long sleepNanos = probe.getNanosToWaitForRefill();
-//            if (sleepNanos > 0) {
-//                TimeUnit.NANOSECONDS.sleep(sleepNanos);
-//            } else {
-//                // Fallback small sleep to avoid tight loop (should not normally happen)
-//                TimeUnit.MILLISECONDS.sleep(50);
-//            }
-//        }
-
         BlockingBucket blockingBucket = bucket.asBlocking();
         try {
             blockingBucket.consume(1L);
