@@ -74,8 +74,10 @@ public class LimitUpdaterService {
 
     private BucketConfiguration createNewConfiguration(int limitPerHour) {
         Duration duration = Duration.parse(period);
-        Bandwidth bandwidth = BandwidthBuilder.builder().capacity(1L)
-            .refillGreedy(limitPerHour, duration).initialTokens(0L).build();
+        Bandwidth bandwidth = BandwidthBuilder.builder()
+            .capacity(limitPerHour)
+            .refillGreedy(limitPerHour, duration)
+            .initialTokens(0L).build();
         return BucketConfiguration.builder().addLimit(bandwidth).build();
 
     }
