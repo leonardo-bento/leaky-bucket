@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 public class LimitUpdaterService {
 
     public static final String CAPACITY_KEY = "app.bucket.capacity";
+    private static final double ONE_PERCENT = 0.01;
     private static final Logger log = LoggerFactory.getLogger(LimitUpdaterService.class);
     private final Bucket rateLimitBucket;
     private final RedissonClient redissonClient;
@@ -74,8 +75,9 @@ public class LimitUpdaterService {
 
     private BucketConfiguration createNewConfiguration(int limitPerHour) {
         Duration duration = Duration.parse(period);
+        long capacity = (long) (limitPerHour * ONE_PERCENT);
         Bandwidth bandwidth = BandwidthBuilder.builder()
-            .capacity(limitPerHour)
+            .capacity(capacity)
             .refillGreedy(limitPerHour, duration)
             .initialTokens(0L).build();
         return BucketConfiguration.builder().addLimit(bandwidth).build();

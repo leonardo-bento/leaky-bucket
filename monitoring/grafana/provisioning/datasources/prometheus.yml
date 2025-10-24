@@ -16,4 +16,4 @@ datasources:
       disableRecordingRules: false
       incrementalQueryOverlapWindow: 10m
       queryTimeout: 60s
-      timeInterval: 5s
+      timeInterval: 15s
